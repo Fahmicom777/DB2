@@ -1,5 +1,6 @@
 import redis
 import json
+
 def login(redis_client, rName, rPassword, userType):
     keys = redis_client.hgetall(userType).keys()
     for key in keys:
@@ -12,7 +13,6 @@ def registrationCheck(redis_client, rName, userType):
     #get all keys from userType
     keys = redis_client.hgetall(userType).keys()
     for key in keys:
-        print("bub")
         #check if entered name is used by one of the useres
         value = redis_client.hget(userType, key)
         if value != None:

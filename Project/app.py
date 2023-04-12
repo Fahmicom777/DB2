@@ -1,6 +1,6 @@
 import redis
 import json
-import db.User
+import db.User, db.Payment
 
 # Connect to Redis
 redis_host = "redis"
@@ -10,40 +10,79 @@ listener = db.User.Listener()
 artist = db.User.Artist()
 admin = db.User.Admin()
 
-bob = {'id': 8, 'name': "bob", 'born': 1986, 'password': "DE", "payment": None}
-alice = {'id': 12, 'name': "alice", 'born': 1995, 'password': "DE1", "payment": None}
-bob1 = {'id': 8, 'name': "nicht Bob", 'born': 1986, 'password': "DE", "payment": None}
-alice1 = {'id': 12, 'name': "nicht Alice", 'born': 1995, 'password': "DE1", "payment": None}
-ingit = {'id': 121, 'name': "ingit", 'born': 19951, 'password': "DE11", "payment": None}
+bob = {'name': "bob", 'born': 1986, 'password': "DE"}
+alice = {'name': "alice", 'born': 1995, 'password': "DE1"}
+bob1 = {'name': "nicht Bob", 'born': 1986, 'password': "DE"}
+alice1 = {'name': "nicht Alice", 'born': 1995, 'password': "DE1"}
+ingit = {'name': "ingit", 'born': 19951, 'password': "DE11"}
 
-song1 = {"titel": "Song1", "Artist": 123,}
+testUser = {'name': "Artist Bob", 'born': 1986, 'password': "DE"}
 
-#user.saveUser(redis_client, alice1)
-#artist.saveUser(redis_client, bob1)
+song1 = {"titel": "Song1", "Artist": None}
+song2 = {"titel": "Song2", "Artist": None}
 
-print("----------")
-listenerKey = listener.saveUser(redis_client, alice)
-if listenerKey:
-    keys = redis_client.hgetall("Listener").keys()
-    for lKey in keys:
-        print(lKey)
+payment = {"name": "Paypal", "subModel": "VIP"}
+payment1 = {"name": "Creditcard", "subModel": "Basic"}
 
-    value = listener.findUser(redis_client, listenerKey)
-    print(value)
-    print(listener.login(redis_client, value["name"], value["password"]))
+#print(db.Payment.setPayment(redis_client, payment))
+#print(db.Payment.setPayment(redis_client, payment1))
+redis_client.hdel("Payment", 2)
+redis_client.hdel("Payment", 3)
+key = redis_client.hgetall("Rating").keys()
+for i in redis_client.hgetall("Rating").keys():
+    print(i)
+    redis_client.hdel("Rating", i)
 
-print("----------")
+for i in redis_client.hgetall("Song").keys():
+    print(i)
+    redis_client.hdel("Song", i)
+
+#testKey = artist.saveUser(redis_client, testUser)
+#testKey = b'428'
+#artist.uploadSong(redis_client, song1, testKey)
+
+#admin.deleteUser(redis_client, testKey, "Artist")
+
+print("----------Artist---------")
 keyArtist = artist.saveUser(redis_client, bob)
+print(keyArtist)
+sKey = None
+sKey1 = None
 if keyArtist:
     keys = redis_client.hgetall("Artist").keys()
     for lkey in keys:
         print(lkey)
-
     value = artist.findUser(redis_client, keyArtist)
     print(value)
     print(artist.login(redis_client, value["name"], value["password"]))
-
-print("----------")
+    print("---------Authentification")
+    artist.uploadSong(redis_client, song1, keyArtist, None)
+    admin.authArtist(redis_client, keyArtist, b'895')
+    print("---------Song 1")
+    sKey1 = artist.uploadSong(redis_client, song1, keyArtist, None)
+    print(sKey)
+    print("---------Song 2")
+    #test = artist.saveUser(redis_client, testUser)
+    #admin.authArtist(redis_client, keyArtist, b'895')
+    sKey = artist.uploadSong(redis_client, song2, keyArtist, [450, 771, 451, keyArtist])
+    print(sKey)
+    print(redis_client.hgetall("Song").items())
+print("----------Listener---------")
+lKey = listener.saveUser(redis_client, alice)
+if lKey:
+    keys = redis_client.hgetall("Listener").keys()
+    for key in keys:
+        print(key)
+    
+    listener.setPayment(redis_client, payment, lKey)
+    value = listener.findUser(redis_client, lKey)
+    print(listener.login(redis_client, value["name"], value["password"]))
+    listener.setRating(redis_client, lKey, sKey, 7)
+    listener.setRating(redis_client, lKey, sKey1, 5)
+    import db.Rating
+    db.Rating.getAllRatingsFromKey(redis_client, lKey, "Listener")
+    db.Rating.getAllRatingsFromKey(redis_client, sKey, "Song")
+print("----------Admin---------")
 
 keys = redis_client.hgetall("Admin").keys()
 for key in keys:

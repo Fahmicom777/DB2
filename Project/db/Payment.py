@@ -1,19 +1,17 @@
 import redis
 import json
 
-payments = {0: "Paypal", 1:"Kredit", 2:"Option3"}
-def getOptions():
-    for i in payments:
-        print(i)
+def setPayment(redis_client: redis.Redis, pOption: dict[str]):
+    key = len(redis_client.hgetall("Payment"))
+    redis_client.hset("Payment", key, json.dumps(pOption))
+    return key
 
-def getPayment(index):
-    return payments[index]
+def getPaymentValue(redis_client: redis.Redis, pKey: int):
+    return json.loads(redis_client.hget("Payment", pKey))
 
-def setPayment(nPayment):
-    match nPayment:
-        case "Paypal":
-            return 0
-        case "Kradit":
-            return 1
-        case "Option3":
-            return 2
+def getPaymentKey(redis_client: redis.Redis, pOption: dict[any]):
+    for i in range(len(redis_client.hgetall("Payment"))):
+        option = json.loads(redis_client.hget("Payment", i))
+        if option == pOption:
+            print("YES")
+            return i
