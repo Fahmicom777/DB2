@@ -1,6 +1,6 @@
 import redis
 import json
-import db.Rating
+import Rating
 import random
 
 classType = "Song"

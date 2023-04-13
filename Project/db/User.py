@@ -1,7 +1,7 @@
 import redis
 import json
 import random
-import db.Login, db.Song, db.Payment, db.Rating
+import Login, Song, Payment, Rating
 
 userTypes = ["Listener", "Artist", "Admin", "Undefined"]
 
@@ -17,7 +17,7 @@ class User:
 
     def saveUser(self, redis_client, user):
         #Check if name within the userType is already taken
-        if (db.Login.registrationCheck(redis_client, user["name"], self.userType)):
+        if (Login.registrationCheck(redis_client, user["name"], self.userType)):
             print("Name already taken")
             return False
         #generate Key and save user
@@ -38,7 +38,7 @@ class User:
         return json.loads(value)
 
     def login(self, redis_client, rName, rPassword):
-        if db.Login.login(redis_client, rName, rPassword, self.userType):
+        if Login.login(redis_client, rName, rPassword, self.userType):
             return "Login as " + self.userType + " successful!"
         else:
             return "Login as " + self.userType + " Faild!"
@@ -49,7 +49,7 @@ class Listener(User):
         self.userType = userTypes[0]
 
     def setPayment(self, redis_client: redis.Redis, pOptions: dict[any], lKey: int):
-        payment = db.Payment.getPaymentKey(redis_client, pOptions)
+        payment = Payment.getPaymentKey(redis_client, pOptions)
         listener = self.findUser(redis_client, lKey)
         listener["payment"] = payment
         print(listener)
@@ -58,17 +58,17 @@ class Listener(User):
     def setRating(self, redis_client:redis.Redis, lKey: int, sKey: int, rating: int):
         if isKey(lKey) and isKey(sKey):
             if rating >= 0 and rating <= 10:
-                db.Rating.setRating(redis_client, lKey, sKey, rating)
+                Rating.setRating(redis_client, lKey, sKey, rating)
             else:
                 print("Rating must be between 0 and 10 (including 0 and 10)")
     
     def getRating(redis_client:redis.Redis, lKey: int, sKey: int):
         if isKey(lKey) or isKey(sKey):
-            return db.Rating.getRating(redis_client, lKey, sKey)
+            return Rating.getRating(redis_client, lKey, sKey)
 
     def getHistory(redis_client:redis.Redis, lKey: int):
         if isKey(lKey):
-            return db.Rating.getHistory(redis_client, lKey)
+            return Rating.getHistory(redis_client, lKey)
 
 class Artist(User):
     def __init__(self):
@@ -77,7 +77,7 @@ class Artist(User):
 
     def saveUser(self, redis_client, user):
         user["Auth"] = None
-        if (db.Login.registrationCheck(redis_client, user["name"], self.userType)):
+        if (Login.registrationCheck(redis_client, user["name"], self.userType)):
             print("Name already taken")
             return False
         key = random.randint(0, 1000)
@@ -114,7 +114,7 @@ class Artist(User):
                 else:
                     print("Additional Artist Nr." + str(addArtists.index(addArtist)) + " not found")
         #Upload Song
-        return db.Song.uploadSong(redis_client, song, artistKey)
+        return Song.uploadSong(redis_client, song, artistKey)
     
     def authArtsit(self, redis_client: redis.Redis, adminKey: int):
         if self.authentification == None:
@@ -160,7 +160,7 @@ class Admin(User):
             print("User of given user type can't be deleted by others")
         elif isKey(key):
             if userType == userTypes[1]:
-                db.Song.deletAllSongsFromArtist(redis_client, key)
+                Song.deletAllSongsFromArtist(redis_client, key)
             if redis_client.hdel(userType, key):
                 print("User successful deleted")
             else:
