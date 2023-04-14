@@ -5,15 +5,18 @@ import Login, Song, Payment, Rating
 
 userTypes = ["Listener", "Artist", "Admin", "Undefined"]
 
-def isKey(key):
-    if key is None or key is False: 
-        print("Invalid Key")
-        return False
-    return True
+
     
 class User:
     def __init__(self):
+        #self.redis_client = redis_client
         self.userType = userTypes[3]
+
+    def isKey(self, key):
+        if key is None or key is False: 
+            print("Invalid Key")
+            return False
+        return True
 
     def saveUser(self, redis_client, user):
         #Check if name within the userType is already taken
@@ -21,6 +24,7 @@ class User:
             print("Name already taken")
             return False
         #generate Key and save user
+        #TO-DO: Check if key already exists
         key = random.randint(0, 1000)
         redis_client.hset(self.userType, key, json.dumps(user))
         return key
@@ -56,18 +60,18 @@ class Listener(User):
         redis_client.hset(self.userType, lKey, json.dumps(listener))
     
     def setRating(self, redis_client:redis.Redis, lKey: int, sKey: int, rating: int):
-        if isKey(lKey) and isKey(sKey):
+        if self.isKey(lKey) and self.isKey(sKey):
             if rating >= 0 and rating <= 10:
                 Rating.setRating(redis_client, lKey, sKey, rating)
             else:
                 print("Rating must be between 0 and 10 (including 0 and 10)")
     
-    def getRating(redis_client:redis.Redis, lKey: int, sKey: int):
-        if isKey(lKey) or isKey(sKey):
+    def getRating(self, redis_client:redis.Redis, lKey: int, sKey: int):
+        if self.isKey(lKey) or self.isKey(sKey):
             return Rating.getRating(redis_client, lKey, sKey)
 
-    def getHistory(redis_client:redis.Redis, lKey: int):
-        if isKey(lKey):
+    def getHistory(self, redis_client:redis.Redis, lKey: int):
+        if self.isKey(lKey):
             return Rating.getHistory(redis_client, lKey)
 
 class Artist(User):
@@ -84,9 +88,9 @@ class Artist(User):
         redis_client.hset(self.userType, key, json.dumps(user))
         return key
         
-    def uploadSong(self, redis_client: redis.Redis, song: dict, artistKey: int, addArtists: list[str]):
+    def uploadSong(self, redis_client: redis.Redis, song: dict, artistKey: int, addArtists: list[any]):
         #Check if key is not empty
-        if not isKey(artistKey):
+        if not self.isKey(artistKey):
             print("No Artist was given")
             return None
         #Check if Artist has its Auth filled out
@@ -110,7 +114,14 @@ class Artist(User):
                     if not song.keys().__contains__("addArtists"):
                         song["addArtists"] = [addArtist]
                     else:
-                        song["addArtists"].append(addArtist)
+                        double = False
+                        for savedAddArtist in song["addArtists"]:
+                            if savedAddArtist == addArtist:
+                                double = True
+                                print("Entered additional artist Nr." + str(song["addArtists"].index(savedAddArtist)) + " is already saved in this Song")
+                                break
+                        if not double:
+                            song["addArtists"].append(addArtist)
                 else:
                     print("Additional Artist Nr." + str(addArtists.index(addArtist)) + " not found")
         #Upload Song
@@ -123,7 +134,6 @@ class Artist(User):
                 if adminKey == key:
                     self.authentification = adminKey
                     break
-
 
 class Admin(User):
     def __init__(self):
@@ -155,12 +165,14 @@ class Admin(User):
                         return {"key": key, "userType": findType, "value": value}
         return None
     
-    def deleteUser(self, redis_client: redis.Redis, key: bytes, userType: str):
+    def deleteUser(self, redis_client: redis.Redis, key: int, userType: str):
         if userType != userTypes[0] and userType != userTypes[1]:
             print("User of given user type can't be deleted by others")
-        elif isKey(key):
+        elif self.isKey(key):
             if userType == userTypes[1]:
                 Song.deletAllSongsFromArtist(redis_client, key)
+            if userType == userTypes[0]:
+                Rating.deleteAllRatingsFromListener(redis_client, key)
             if redis_client.hdel(userType, key):
                 print("User successful deleted")
             else:

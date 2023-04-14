@@ -10,13 +10,13 @@ listener = db.User.Listener()
 artist = db.User.Artist()
 admin = db.User.Admin()
 
-bob = {'name': "bob", 'born': 1986, 'password': "DE"}
-alice = {'name': "alice", 'born': 1995, 'password': "DE1"}
-bob1 = {'name': "nicht Bob", 'born': 1986, 'password': "DE"}
-alice1 = {'name': "nicht Alice", 'born': 1995, 'password': "DE1"}
-ingit = {'name': "ingit", 'born': 19951, 'password': "DE11"}
+bob = {'name': "bob", 'password': "DE"}
+alice = {'name': "alice", 'password': "DE1"}
+bob1 = {'name': "nicht Bob", 'password': "DE"}
+alice1 = {'name': "nicht Alice", 'password': "DE1"}
+ingit = {'name': "ingit", 'password': "DE11"}
 
-testUser = {'name': "Artist Bob", 'born': 1986, 'password': "DE"}
+testUser = {'name': "Artist Bob", 'password': "DE"}
 
 song1 = {"titel": "Song1", "Artist": None}
 song2 = {"titel": "Song2", "Artist": None}

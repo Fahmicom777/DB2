@@ -19,11 +19,23 @@ def setRating(redis_client:redis.Redis, lKey: int, sKey: int, rating: int):
 def getRating(redis_client:redis.Redis, rKey: int):
     return json.loads(redis_client.hget("Rating", rKey))
 
-def getAllRatingsFromKey(redis_client: redis.Redis, key: int, type: int):
-    ratings = []
-    rKeys = redis_client.hgetall("Rating").keys()
-    for rKey in rKeys:
+def getAllRatingKeysFrom(redis_client: redis.Redis, key: int, type: int):
+    rKeys = []
+    allKeys = redis_client.hgetall("Rating").keys()
+    for rKey in allKeys:
         rating = getRating(redis_client, rKey)
         if rating[type] == key:
-            ratings.append(rating)
-    print(ratings)
+            rKeys.append(rKey)
+    return rKeys
+
+def getAllRatingsFromKey(redis_client: redis.Redis, key: int, type: str):
+    ratings = []
+    rKeys = getAllRatingKeysFrom(redis_client, key, type)
+    for rKey in rKeys:
+        ratings.append(getRating(redis_client, rKey))
+    return ratings
+
+def deleteAllRatingsFromListener(redis_client: redis.Redis, key: int):
+    rKeys = getAllRatingKeysFrom(redis_client, key, "Listener")
+    for rKey in rKeys:
+        redis_client.hdel("Rating", rKey)
