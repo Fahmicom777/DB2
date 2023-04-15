@@ -2,7 +2,7 @@ import redis
 import json
 import Rating
 import random
-
+import KeyGenerator
 classType = "Song"
 
 def isKey(key):
@@ -10,13 +10,15 @@ def isKey(key):
         print("Invalid Key")
         return False
 
-def uploadSong(redis_client:redis.Redis, song: dict[any], artistKey: int):
-    artistSongs = getAllSongsFromArtist(redis_client, artistKey)
-    for artistSong in artistSongs:
-        if artistSong == song:
+def uploadSong(redis_client:redis.Redis, song: dict[any], artistUploads: list[int]):
+    for artistSong in artistUploads:
+        if artistSong is None:
+            break
+        if json.loads(redis_client.hget(classType, artistSong)) == song:
             print("Song with same informations already uploaded")
-            return None
-    sKey = random.randint(0, 1000)
+            return artistSong
+    keys = redis_client.hgetall("Rating").keys()
+    sKey = KeyGenerator.generateKey([0, 1000], keys)
     redis_client.hset(classType, sKey, json.dumps(song))
     print("Uploaded Song")
     print(song)
@@ -40,7 +42,6 @@ def getAllSongsFromArtist(redis_client:redis.Redis, artistKey: int) -> list:
             if int(artistKey) == value["Artist"]:
                 test = {"Key": key, "Value": value}
                 artistSongs.append(test)
-    #print(artistSongs)
     return artistSongs
 
 def deletAllSongsFromArtist(redis_client:redis.Redis, artistKey: int):

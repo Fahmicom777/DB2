@@ -13,5 +13,4 @@ def getPaymentKey(redis_client: redis.Redis, pOption: dict[any]):
     for i in range(len(redis_client.hgetall("Payment"))):
         option = json.loads(redis_client.hget("Payment", i))
         if option == pOption:
-            print("YES")
             return i

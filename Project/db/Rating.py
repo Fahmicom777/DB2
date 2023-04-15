@@ -1,20 +1,23 @@
 import redis
 import json
-import random
+import KeyGenerator
 
 def setRating(redis_client:redis.Redis, lKey: int, sKey: int, rating: int):
-    rKey = random.randint(1, 1000)
     keys = redis_client.hgetall("Rating").keys()
-    
-    done = False
-    while not done:
-        done = True
-        for key in keys:
-            if rKey == key:
-                done = False
-                rKey = random.randint(1, 1000)
-                break
-    redis_client.hset("Rating", rKey, json.dumps({"Listener": lKey, "Song": sKey, "Rating": rating}))
+    key = KeyGenerator.generateKey([1, 1000], keys)
+    nRating = {"Listener": lKey, "Song": sKey, "Rating": rating}
+
+    lRatings = getAllRatingsFromKey(redis_client, lKey, "Listener")
+    rKeys = getAllRatingKeysFrom(redis_client, lKey, "Listener")
+    for lRating in lRatings:
+        print(lRating)
+        print(nRating)
+        if lRating["Song"] == nRating["Song"]:
+            lRating["Rating"] = rating
+            key = rKeys[lRatings.index(lRating)]
+            break
+            
+    redis_client.hset("Rating", key, json.dumps(nRating))
 
 def getRating(redis_client:redis.Redis, rKey: int):
     return json.loads(redis_client.hget("Rating", rKey))
